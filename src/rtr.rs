@@ -15,13 +15,14 @@
         newPath.insert_str(7, source.as_str());
         return newPath;
     }
+    
     //check if file exist true if exist
     fn checkFiles(fileLang : &String) {
         match File::open(CreatePath(fileLang.to_string())) {
             Ok(_) => {
             }
             Err(_) => {
-                panic!("could open the {} file", fileLang)
+                panic!("could open the {} file at path {}", fileLang, CreatePath(fileLang.to_string()));
             }
         }
 
@@ -50,45 +51,11 @@
         }
     }
 
-    //create the file and his parent folder
-    // fn createFile() {
-    //     fs::create_dir_all("./lang");
-    //     File::create(getPath());
-    // }
-
-    // //write every strings into the file
-    // fn exportFile() {
-
-    //     let mut v = strings.lock().unwrap().to_vec();
-    //     let f = File::open(getPath()).unwrap();
-    //     let mut f = LineWriter::new(f);
-    //     v.sort_unstable(); // sort the vector
-    //     v.dedup(); //remove all duplicated
-
-    //     for i in 0..v.len(){
-    //         v[i].push_str("\n"); //add a line return after each line
-    //         f.write_all(v[i].as_bytes()).unwrap();
-    //     }
-    // }
     //function to call at the start of the program
    pub fn init(newLang: &String) {
         checkFiles(&newLang);
         loadFiles(&newLang);
     }
-
-    //the main function of the crate, use it for every string that you want to be translated
-    // pub fn tr(text: String) -> String {
-    //     let v = &strings.lock().unwrap();
-    //     if getFileExists() == true {
-    //         let mut newText = v[searchIndex(text)].clone();
-    //         newText.truncate(newText.len() - 2);
-    //         return newText;
-    //     }
-    //     else {
-    //         strings.lock().unwrap().push(text.clone());
-    //         return text;
-    //     }
-    // }
 
     pub fn rtr(text : &str) -> String {
         
