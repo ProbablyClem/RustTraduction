@@ -1,15 +1,13 @@
 #[macro_use(lazy_static)]
 extern crate lazy_static;
 
-
-//mod translate;
-//use translate::{init, rtr};
 mod rtr;
+use crate::rtr::init;
 use rtr::rtr;
 
 fn main() {
 
-    rtr::init(&"fr".to_string());
+    init(&"fr".to_string());
     println!("{}", rtr("hello"));
     println!("{}", rtr("worlds"));
 }
