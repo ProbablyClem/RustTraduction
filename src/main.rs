@@ -6,7 +6,6 @@ use crate::rtr::init;
 use rtr::rtr;
 
 fn main() {
-
     init(&"fr".to_string());
     println!("{}", rtr("hello"));
     println!("{}", rtr("worlds"));
