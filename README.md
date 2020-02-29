@@ -1,6 +1,6 @@
 # RustTraduction
 rust crate to translate strings
 
-example in src/main.rs
+doc : https://docs.rs/rtr/0.1.0/rtr/index.html
 
 use https://github.com/ProbablyClem/rtrTranslator to create translation files
