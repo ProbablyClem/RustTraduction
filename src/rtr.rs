@@ -1,34 +1,33 @@
-#[allow(non_snake_case)]
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::sync::Mutex;
 
 lazy_static! {
-    static ref originVec : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the origin langage
-    static ref destLangVec : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the source language
+    static ref ORIGIN_VEC : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the origin langage
+    static ref DEST_VEC : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the destination language (e.g fr, it, de...)
 }
 
-fn CreatePath(source: String) -> String {
-    let mut newPath = String::from("./lang/.txt");
-    newPath.insert_str(7, source.as_str());
-    return newPath;
+fn create_path(source: String) -> String {
+    let mut new_path = String::from("./lang/.txt");
+    new_path.insert_str(7, source.as_str());
+    return new_path;
 }
 
 //check if file exist true if exist
-fn checkFiles(fileLang: &String) {
-    match File::open(CreatePath(fileLang.to_string())) {
+fn check_file(file_lang: &String) {
+    match File::open(create_path(file_lang.to_string())) {
         Ok(_) => {}
         Err(_) => {
             panic!(
                 "could open the {} file at path {}",
-                fileLang,
-                CreatePath(fileLang.to_string())
+                file_lang,
+                create_path(file_lang.to_string())
             );
         }
     }
 
-    match File::open(CreatePath("origin".to_string())) {
+    match File::open(create_path("origin".to_string())) {
         Ok(_) => {}
         Err(_) => {
             panic!("couldn't open the origin file in ./lang");
@@ -37,10 +36,10 @@ fn checkFiles(fileLang: &String) {
 }
 
 //load the file into the vec line by line
-fn loadFiles(text: &String) {
+fn load_files(text: &String) {
     //open the origin langage file
 
-    let path = CreatePath("origin".to_string());
+    let path = create_path("origin".to_string());
     {
         let f = match File::open(&path) {
             Ok(file) => file,
@@ -49,11 +48,11 @@ fn loadFiles(text: &String) {
 
         let f = BufReader::new(f);
         for line in f.lines() {
-            originVec.lock().unwrap().push(line.unwrap());
+            ORIGIN_VEC.lock().unwrap().push(line.unwrap());
         }
     }
 
-    let path = CreatePath(text.to_string());
+    let path = create_path(text.to_string());
     {
         let g = match File::open(&path) {
             Ok(file) => file,
@@ -62,21 +61,21 @@ fn loadFiles(text: &String) {
 
         let g = BufReader::new(g);
         for line in g.lines() {
-            destLangVec.lock().unwrap().push(line.unwrap());
+            DEST_VEC.lock().unwrap().push(line.unwrap());
         }
     }
 }
 
 //function to call at the start of the program
-pub fn init(newLang: &String) {
-    checkFiles(&newLang);
-    loadFiles(&newLang);
+pub fn init(new_lang: &String) {
+    check_file(&new_lang);
+    load_files(&new_lang);
 }
 
 pub fn rtr(text: &str) -> String {
-    match originVec.lock().unwrap().binary_search(&text.to_string()) {
+    match ORIGIN_VEC.lock().unwrap().binary_search(&text.to_string()) {
         Ok(index) => {
-            return destLangVec.lock().unwrap()[index].clone();
+            return DEST_VEC.lock().unwrap()[index].clone();
         }
         Err(_) => return String::from(text.to_string()),
     }
