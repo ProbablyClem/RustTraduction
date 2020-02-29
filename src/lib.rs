@@ -1,16 +1,22 @@
+//! # rtr
+//! 
+//! rtr is a crate that return strings from translation files <br/>
+//! _Thoses files need to be manually created with the [rtrTranslator](https://github.com/ProbablyClem/rtrTranslator) software_
 #[macro_use]
 extern crate lazy_static;
 
+use std::io;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::sync::Mutex;
-
+use std::sync::atomic::{AtomicBool, Ordering};
 
 
 lazy_static! {
     static ref ORIGIN_VEC : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the origin langage
     static ref DEST_VEC : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the destination language (e.g fr, it, de...)
+    static ref STATE : Mutex<AtomicBool> = Mutex::new(AtomicBool::new(true));
 }
 
 fn create_path(source: String) -> String {
@@ -19,58 +25,6 @@ fn create_path(source: String) -> String {
     return new_path;
 }
 
-//check if file exist true if exist
-fn check_file(file_lang: &str) {
-    match File::open(create_path(file_lang.to_string())) {
-        Ok(_) => {}
-        Err(e) => {
-            panic!(
-                "could open the {} file at path {}, error {}",
-                file_lang,
-                create_path(file_lang.to_string()),
-                e
-            );
-        }
-    }
-
-    match File::open(create_path("origin".to_string())) {
-        Ok(_) => {}
-        Err(e) => {
-            panic!("couldn't open the origin file in ./lang, error {}", e);
-        }
-    }
-}
-
-//load the file into the vec line by line
-fn load_files(text: &str) {
-    //open the origin langage file
-
-    let path = create_path("origin".to_string());
-    {
-        let f = match File::open(&path) {
-            Ok(file) => file,
-            Err(e) => panic!("couldn't open file {}, error {}", path, e),
-        };
-
-        let f = BufReader::new(f);
-        for line in f.lines() {
-            ORIGIN_VEC.lock().unwrap().push(line.unwrap());
-        }
-    }
-
-    let path = create_path(text.to_string());
-    {
-        let g = match File::open(&path) {
-            Ok(file) => file,
-            Err(e) => panic!("couldn't open file {}, error {}", path, e),
-        };
-
-        let g = BufReader::new(g);
-        for line in g.lines() {
-            DEST_VEC.lock().unwrap().push(line.unwrap());
-        }
-    }
-}
 
 ///Set the language for the program
 /// # Examples
@@ -78,28 +32,86 @@ fn load_files(text: &str) {
 /// To set the program in french
 /// 
 /// ```
-/// init("fr");
-/// ```
-///Don't forget that it will need the fr.txt file
+/// extern crate rtr;
 /// 
-pub fn init(new_lang: &str) {
-    check_file(&new_lang);
-    load_files(&new_lang);
+/// rtr::init("fr");
+/// ```
+///Don't forget that it will need the ./lang/fr.txt file
+/// 
+pub fn init(new_lang: &str) -> Result<(), io::Error> {
+    let f = File::open(create_path("origin".to_string()))?;
+
+        let f = BufReader::new(f);
+
+        for line in f.lines() {
+            ORIGIN_VEC.lock().unwrap().push(line.unwrap());
+        }
+
+        let g = File::open(create_path(new_lang.to_string()))?;
+
+        let g = BufReader::new(g);
+        for line in g.lines() {
+            DEST_VEC.lock().unwrap().push(line.unwrap());
+        }
+
+        Ok(())
+}
+
+///Disable the translation <br/>
+/// [rtr](./fn.rtr.html) will now return the base String
+/// 
+/// # Examples
+/// 
+/// disable() is mostly used for error haddling
+/// ```
+/// extern crate rtr;
+/// use rtr::rtr;
+/// 
+/// match rtr::init("fr") {
+///     Ok(_) => (),
+///     Err(e) => {
+///         println!("couldn't load fr translation file");
+///         rtr::disable();
+///     }
+/// }
+/// ```
+/// 
+/// use [enable](./fn.enable.html) to enable it again
+pub fn disable() {
+    &STATE.lock().unwrap().store(false, Ordering::Relaxed);
+}
+
+///Enable the translation
+///[rtr](./fn.rtr.html) will now try to read strings from translation <br/>
+///*the translation then need to be loaded with [init](./fn.init.html)!*
+pub fn enable() {
+    &STATE.lock().unwrap().store(true, Ordering::Relaxed);
 }
 
 ///Use with every str that you need to translate
 /// # Examples
 /// 
 /// ```
-/// init("fr");
-/// println(rtr("hello world"));
+/// extern crate rtr;
+/// use rtr::rtr;
+/// 
+/// rtr::init("fr");
+/// println!("{}", rtr("hello world"));
 /// ```
 /// Will return the sentence that correspond to "hello world" in the ./lang/fr.txt file
+/// 
+/// 
 pub fn rtr(text: &str) -> String {
-    match ORIGIN_VEC.lock().unwrap().binary_search(&text.to_string()) {
-        Ok(index) => {
-            return DEST_VEC.lock().unwrap()[index].clone();
+    if &STATE.lock().unwrap().load(Ordering::Relaxed) == &true {
+        match ORIGIN_VEC.lock().unwrap().binary_search(&text.to_string()) {
+            Ok(index) => {
+                return DEST_VEC.lock().unwrap()[index].clone();
+            }
+            Err(_) => return text.to_string(),
         }
-        Err(_) => return text.to_string(),
+    }
+
+    else {
+        return text.to_string();
     }
 }
