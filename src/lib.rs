@@ -2,6 +2,7 @@
 //! 
 //! rtr is a crate that return strings from translation files <br/>
 //! _Thoses files need to be manually created with the [rtrTranslator](https://github.com/ProbablyClem/rtrTranslator) software_
+//! source code at : 
 #[macro_use]
 extern crate lazy_static;
 
