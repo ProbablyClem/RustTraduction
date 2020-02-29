@@ -34,10 +34,15 @@ fn create_path(source: String) -> String {
 /// ```
 /// extern crate rtr;
 /// 
-/// rtr::init("fr");
+/// match rtr::init("fr"){
+///     Ok(_) => (),
+///     Err(e) => panic!("couldn't load the fr translation file, error {}", e),
+/// };
 /// ```
 ///Don't forget that it will need the ./lang/fr.txt file
 /// 
+/// # Errors
+///Will return an std::io:Error in case of trouble loading the translation file 
 pub fn init(new_lang: &str) -> Result<(), io::Error> {
     let f = File::open(create_path("origin".to_string()))?;
 
@@ -58,11 +63,11 @@ pub fn init(new_lang: &str) -> Result<(), io::Error> {
 }
 
 ///Disable the translation <br/>
-/// [rtr](./fn.rtr.html) will now return the base String
+/// [rtr](./fn.rtr.html) will returns the argument
 /// 
 /// # Examples
 /// 
-/// disable() is mostly used for error haddling
+/// disable() is mostly useful for error handling
 /// ```
 /// extern crate rtr;
 /// use rtr::rtr;
@@ -81,11 +86,32 @@ pub fn disable() {
     &STATE.lock().unwrap().store(false, Ordering::Relaxed);
 }
 
-///Enable the translation
-///[rtr](./fn.rtr.html) will now try to read strings from translation <br/>
-///*the translation then need to be loaded with [init](./fn.init.html)!*
+///Enable the translation<br/>
+///[rtr](./fn.rtr.html) will now try to read strings from the translation file <br/>
+///*_The translation then need to be loaded with [init](./fn.init.html)!_*<br/>
+///Only useful after using [disable](./fn.disable.html)
 pub fn enable() {
     &STATE.lock().unwrap().store(true, Ordering::Relaxed);
+}
+
+///Return the state of the translation<br/>
+///If *false* [rtr](./fn.rtr.html) will return the argument<br/>
+///If  *true* [rtr](./fn.rtr.html) will act normaly<br/>
+///True by default
+///  # Examples
+/// ```
+///extern crate rtr;
+///use rtr::rtr;
+///rtr::init("fr").unwrap();
+/// 
+///assert_eq!(rtr::is_enable(), true);
+/// //assuming that "hello" correspond to "bonjour" in the fr.txt file
+///assert_eq!(rtr("hello"), "bonjour".to_string());
+/// 
+///rtr::disable();
+///assert_eq!(rtr("hello"), "hello".to_string());
+pub fn is_enable() -> bool{
+    return STATE.lock().unwrap().load(Ordering::Relaxed);
 }
 
 ///Use with every str that you need to translate
@@ -99,8 +125,6 @@ pub fn enable() {
 /// println!("{}", rtr("hello world"));
 /// ```
 /// Will return the sentence that correspond to "hello world" in the ./lang/fr.txt file
-/// 
-/// 
 pub fn rtr(text: &str) -> String {
     if &STATE.lock().unwrap().load(Ordering::Relaxed) == &true {
         match ORIGIN_VEC.lock().unwrap().binary_search(&text.to_string()) {
