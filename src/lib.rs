@@ -105,13 +105,13 @@ pub fn enable() {
 ///use rtr::rtr;
 ///rtr::init("fr").unwrap();
 /// 
-///assert_eq!(rtr::is_enable(), true);
+///assert_eq!(rtr::is_enabled(), true);
 /// //assuming that "hello" correspond to "bonjour" in the fr.txt file
 ///assert_eq!(rtr("hello"), "bonjour".to_string());
 /// 
 ///rtr::disable();
 ///assert_eq!(rtr("hello"), "hello".to_string());
-pub fn is_enable() -> bool{
+pub fn is_enabled() -> bool{
     return STATE.lock().unwrap().load(Ordering::Relaxed);
 }
 
