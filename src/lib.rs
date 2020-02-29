@@ -1,7 +1,12 @@
+#[macro_use]
+extern crate lazy_static;
+
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::sync::Mutex;
+
+
 
 lazy_static! {
     static ref ORIGIN_VEC : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the origin langage
