@@ -15,28 +15,29 @@ fn create_path(source: String) -> String {
 }
 
 //check if file exist true if exist
-fn check_file(file_lang: &String) {
+fn check_file(file_lang: &str) {
     match File::open(create_path(file_lang.to_string())) {
         Ok(_) => {}
-        Err(_) => {
+        Err(e) => {
             panic!(
-                "could open the {} file at path {}",
+                "could open the {} file at path {}, error {}",
                 file_lang,
-                create_path(file_lang.to_string())
+                create_path(file_lang.to_string()),
+                e
             );
         }
     }
 
     match File::open(create_path("origin".to_string())) {
         Ok(_) => {}
-        Err(_) => {
-            panic!("couldn't open the origin file in ./lang");
+        Err(e) => {
+            panic!("couldn't open the origin file in ./lang, error {}", e);
         }
     }
 }
 
 //load the file into the vec line by line
-fn load_files(text: &String) {
+fn load_files(text: &str) {
     //open the origin langage file
 
     let path = create_path("origin".to_string());
@@ -66,17 +67,34 @@ fn load_files(text: &String) {
     }
 }
 
-//function to call at the start of the program
-pub fn init(new_lang: &String) {
+///Set the language for the program
+/// # Examples
+/// 
+/// To set the program in french
+/// 
+/// ```
+/// init("fr");
+/// ```
+///Don't forget that it will need the fr.txt file
+/// 
+pub fn init(new_lang: &str) {
     check_file(&new_lang);
     load_files(&new_lang);
 }
 
+///Use with every str that you need to translate
+/// # Examples
+/// 
+/// ```
+/// init("fr");
+/// println(rtr("hello world"));
+/// ```
+/// Will return the sentence that correspond to "hello world" in the ./lang/fr.txt file
 pub fn rtr(text: &str) -> String {
     match ORIGIN_VEC.lock().unwrap().binary_search(&text.to_string()) {
         Ok(index) => {
             return DEST_VEC.lock().unwrap()[index].clone();
         }
-        Err(_) => return String::from(text.to_string()),
+        Err(_) => return text.to_string(),
     }
 }
