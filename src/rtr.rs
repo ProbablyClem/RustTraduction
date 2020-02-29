@@ -30,24 +30,39 @@
             Ok(_) => {
             }
             Err(_) => {
-                panic!("couldn't open the origin file");
+                panic!("couldn't open the origin file in ./lang");
             }
         }
     }
 
     //load the file into the vec line by line
     fn loadFiles(text : &String) {
-        //open the orginin langage file
-        let f = File::open(CreatePath("origin".to_string())).unwrap();
-        let f = BufReader::new(f);
-        for line in f.lines() {
-            originVec.lock().unwrap().push(line.unwrap());
+        //open the origin langage file
+
+        let path = CreatePath("origin".to_string()); {
+            
+            let f = match File::open(&path){
+                Ok(file) => file,
+                Err(e) => panic!("couldn't open file {}, error {}", path, e)
+            };
+        
+
+            let f = BufReader::new(f);
+            for line in f.lines() {
+                originVec.lock().unwrap().push(line.unwrap());
+            }
         }
 
-        let g = File::open(CreatePath(text.to_string())).unwrap();
-        let g = BufReader::new(g);
-        for line in g.lines() {
-            destLangVec.lock().unwrap().push(line.unwrap());
+        let path = CreatePath(text.to_string()); {
+            let g = match File::open(&path){
+                Ok(file) => file,
+                Err(e) => panic!("couldn't open file {}, error {}", path, e)
+            };
+
+            let g = BufReader::new(g);
+            for line in g.lines() {
+                destLangVec.lock().unwrap().push(line.unwrap());
+            }
         }
     }
 
@@ -62,8 +77,7 @@
         match originVec.lock().unwrap().binary_search(&text.to_string())
             {
                 Ok(index) => {
-                let destVec = destLangVec.lock().unwrap();
-                return destVec[index].clone();
+                return destLangVec.lock().unwrap()[index].clone();
                 },
                 Err(_) => return String::from(text.to_string()),
 
