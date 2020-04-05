@@ -9,3 +9,4 @@ license = "MIT"
 
 [dependencies]
 lazy_static = "1.4.0"
+string_format = "0.1.0"

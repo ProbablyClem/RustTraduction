@@ -6,6 +6,10 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate string_format;
+use string_format::*;
+
 use std::io;
 use std::fs::File;
 use std::io::prelude::*;
@@ -13,10 +17,9 @@ use std::io::BufReader;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-
 lazy_static! {
-    static ref ORIGIN_VEC : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the origin langage
-    static ref DEST_VEC : Mutex<Vec<String>> = Mutex::new(Vec::new()); //The vector that containt every line of the destination language (e.g fr, it, de...)
+    static ref ORIGIN_VEC : Vec<String> = load_vec("origin"); //The vector that containt every line of the origin langage
+    static ref DEST_VEC : Vec<String> = load_vec("fr"); //The vector that containt every line of the destination language (e.g fr, it, de...)
     static ref STATE : Mutex<AtomicBool> = Mutex::new(AtomicBool::new(true));
 }
 
@@ -24,6 +27,18 @@ fn create_path(source: String) -> String {
     let mut new_path = String::from("./lang/.txt");
     new_path.insert_str(7, source.as_str());
     return new_path;
+}
+
+fn load_vec(lang : &str) -> Vec<String>{
+    let f = File::open(create_path(lang.to_string())).unwrap();
+    let mut vec = Vec::new();
+
+    let f = BufReader::new(f);
+
+        for line in f.lines() {
+           vec.push(line.unwrap());
+        }
+    vec
 }
 
 
@@ -45,20 +60,20 @@ fn create_path(source: String) -> String {
 /// # Errors
 ///Will return an std::io:Error in case of trouble loading the translation file 
 pub fn init(new_lang: &str) -> Result<(), io::Error> {
-    let f = File::open(create_path("origin".to_string()))?;
+    // let f = File::open(create_path("origin".to_string()))?;
 
-        let f = BufReader::new(f);
+    //     let f = BufReader::new(f);
 
-        for line in f.lines() {
-            ORIGIN_VEC.lock().unwrap().push(line.unwrap());
-        }
+    //     for line in f.lines() {
+    //         ORIGIN_VEC.lock().unwrap().push(line.unwrap());
+    //     }
 
-        let g = File::open(create_path(new_lang.to_string()))?;
+    //     let g = File::open(create_path(new_lang.to_string()))?;
 
-        let g = BufReader::new(g);
-        for line in g.lines() {
-            DEST_VEC.lock().unwrap().push(line.unwrap());
-        }
+    //     let g = BufReader::new(g);
+    //     for line in g.lines() {
+    //         DEST_VEC.lock().unwrap().push(line.unwrap());
+    //     }
 
         Ok(())
 }
@@ -107,7 +122,7 @@ pub fn enable() {
 /// 
 ///assert_eq!(rtr::is_enabled(), true);
 /// //assuming that "hello" correspond to "bonjour" in the fr.txt file
-///assert_eq!(rtr("hello"), "bonjour".to_string());
+///assert_eq!(rtr("hello"), "salut".to_string());
 /// 
 ///rtr::disable();
 ///assert_eq!(rtr("hello"), "hello".to_string());
@@ -128,9 +143,9 @@ pub fn is_enabled() -> bool{
 /// Will return the sentence that correspond to "hello world" in the ./lang/fr.txt file
 pub fn rtr(text: &str) -> String {
     if &STATE.lock().unwrap().load(Ordering::Relaxed) == &true {
-        match ORIGIN_VEC.lock().unwrap().binary_search(&text.to_string()) {
+        match ORIGIN_VEC.binary_search(&text.to_string()) {
             Ok(index) => {
-                return DEST_VEC.lock().unwrap()[index].clone();
+                return DEST_VEC[index].clone();
             }
             Err(_) => return text.to_string(),
         }
@@ -139,4 +154,31 @@ pub fn rtr(text: &str) -> String {
     else {
         return text.to_string();
     }
+}
+
+///Same as rtr but will format the text.  
+/// Will translate the first argument and then format with the others.
+/// 
+/// # Example
+/// ```
+/// #[macro_use]
+/// extern crate rtr;
+/// use rtr::*;
+/// 
+/// init("fr");
+/// 
+/// assert_eq!(rtr!("hello {} {}", "cruel".to_string(), "monde".to_string()), String::from("salut cruel monde"));
+/// ```
+#[macro_export]
+macro_rules! rtr {
+    ($($x:expr)?, $($arg:tt)*) => {
+        string_format!(rtr($($x)?), $($arg)*);
+    };
+}
+
+#[test]
+fn format(){
+    init("fr");
+    //assert_eq!(rtr("hello {}"), String::from("salut {}"));
+    assert_eq!(rtr!("hello {} {}", "cruel".to_string(), "monde".to_string()), String::from("salut cruel monde"));
 }
